@@ -192,8 +192,12 @@
 
   <div class="card">
     <p class="card-title"><span class="dot"></span>Productos guardados</p>
-    <div class="row2" style="grid-template-columns:1fr auto;">
+    <div class="row2" style="grid-template-columns:1fr 1fr;">
       <div class="inputrow"><input id="saveName" type="text" placeholder="Nombre del producto"></div>
+      <div class="inputrow"><input id="saveAsin" type="text" placeholder="ASIN" maxlength="10" style="text-transform:uppercase;"></div>
+    </div>
+    <div class="row2" style="grid-template-columns:1fr auto; margin-top:10px;">
+      <div></div>
       <button id="saveBtn" class="savebtn">Guardar</button>
     </div>
     <div id="savedList" class="savedlist"></div>
@@ -338,10 +342,11 @@ function renderSaved(items){
     const div = document.createElement('div');
     div.className = 'saveditem';
     const roiPct = item.roi !== undefined ? (item.roi*100).toFixed(1)+'%' : '—';
+    const asinLine = item.asin ? ` · ${item.asin}` : '';
     div.innerHTML = `
       <div class="info">
         <div class="name">${item.name}</div>
-        <div class="meta">$${parseFloat(item.values.precio||0).toFixed(2)} · ROI ${roiPct}</div>
+        <div class="meta">$${parseFloat(item.values.precio||0).toFixed(2)} · ROI ${roiPct}${asinLine}</div>
       </div>
       <div class="actions">
         <button class="iconbtn" data-action="load" data-id="${item.id}" title="Cargar">↺</button>
@@ -357,7 +362,9 @@ function refreshSaved(){
 
 document.getElementById('saveBtn').addEventListener('click', () => {
   const nameInput = document.getElementById('saveName');
+  const asinInput = document.getElementById('saveAsin');
   const name = nameInput.value.trim();
+  const asin = asinInput.value.trim().toUpperCase();
   if (!name){
     saveStatus.textContent = 'Ponle un nombre al producto antes de guardar.';
     return;
@@ -380,7 +387,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
   const roi = costo!==0 ? ganancia/costo : 0;
 
   const id = 'p_' + Date.now();
-  const record = { id, name, values: currentValues(), roi, ganancia, savedAt: Date.now() };
+  const record = { id, name, asin, values: currentValues(), roi, ganancia, savedAt: Date.now() };
   const items = readStore();
   items.push(record);
   const ok = writeStore(items);
@@ -389,9 +396,11 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     return;
   }
   nameInput.value = '';
+  asinInput.value = '';
   saveStatus.textContent = `"${name}" guardado.`;
   refreshSaved();
 });
+
 
 savedListEl.addEventListener('click', (ev) => {
   const btn = ev.target.closest('button');
@@ -403,6 +412,8 @@ savedListEl.addEventListener('click', (ev) => {
     const record = items.find(it => it.id === id);
     if (record){
       Object.entries(record.values).forEach(([k,v]) => { if (el[k]) el[k].value = v; });
+      document.getElementById('saveName').value = record.name || '';
+      document.getElementById('saveAsin').value = record.asin || '';
       calc();
       saveStatus.textContent = `Cargado: "${record.name}".`;
     }
